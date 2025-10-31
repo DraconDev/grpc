@@ -25,15 +25,45 @@ func StartClient() {
 	defer conn.Close()
 	c := pb.NewGreeterClient(conn)
 
-	name := defaultName
+	// Test all available RPC methods
+	testAllMethods(c)
+}
+
+func testAllMethods(c pb.GreeterClient) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	// Test 1: SayHello
+	name := "Alice"
 	if len(os.Args) > 1 {
 		name = os.Args[1]
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
+	
+	log.Println("=== Testing SayHello ===")
+	r1, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
 	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		log.Fatalf("SayHello failed: %v", err)
 	}
-	log.Printf("Greeting: %s", r.GetMessage())
+	log.Printf("SayHello response: %s", r1.GetMessage())
+
+	// Test 2: SayGoodbye
+	log.Println("=== Testing SayGoodbye ===")
+	r2, err := c.SayGoodbye(ctx, &pb.HelloRequest{Name: name})
+	if err != nil {
+		log.Fatalf("SayGoodbye failed: %v", err)
+	}
+	log.Printf("SayGoodbye response: %s", r2.GetMessage())
+
+	// Test 3: GetServerStatus
+	log.Println("=== Testing GetServerStatus ===")
+	r3, err := c.GetServerStatus(ctx, &pb.StatusRequest{ServiceName: "hello-service"})
+	if err != nil {
+		log.Fatalf("GetServerStatus failed: %v", err)
+	}
+	log.Printf("Server Status:")
+	log.Printf("  Status: %s", r3.GetStatus())
+	log.Printf("  Uptime: %d seconds", r3.GetUptimeSeconds())
+	log.Printf("  Version: %s", r3.GetVersion())
+
+	log.Println("=== All tests completed successfully! ===")
 }
